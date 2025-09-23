@@ -209,8 +209,11 @@ void afCameraHMD::updateHMDParams()
 void afCameraHMD::makeFullScreen()
 {
     const GLFWvidmode* mode = glfwGetVideoMode(m_camera->m_monitor);
-    int w = 2880;
-    int h = 1600;
+    // takes resolution from the HMD (can make it automated in future)
+    // int w = 2880; OLD HMD VALUES
+    // int h = 1600;
+    int w = 3680; // New HMD Values
+    int h = 1836;
     int x = mode->width - w;
     int y = mode->height - h;
     int xpos, ypos;

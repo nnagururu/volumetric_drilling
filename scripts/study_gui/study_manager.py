@@ -2,7 +2,9 @@ import os
 import subprocess
 import sys
 from pupil_manager import *
-
+from exp_reader import ExpReader
+import numpy as np
+from pathlib import Path
 
 class RecordOptions:
     def __init__(self):
@@ -55,17 +57,16 @@ class StudyManager:
         os.makedirs(record_options.path)
         window_handle = self._get_ambf_main_window_handle()
         if record_options.pupil_data:
-            # self.send_xdotool_keycmd(self._get_ambf_main_window_handle(), 'ctrl+g')
+            self.pupil_manager.start_recording(record_options.path) # need to access the 000 folder created by pupil data
+            pupil_data_path = os.path.join(record_options.path, "000")
             self.send_xdotool_keycmd(window_handle, 'ctrl+g')
-            # os.system(f'xdotool type --window {window_handle} "{record_options.path}"') # for video recording script
             # Set the environment variable for the recording path
             temp_path = "./Simulator_Recordings/tmp/recording_path.txt"
             with open(temp_path, "w") as temp_file:
-                temp_file.write(record_options.path)
+                temp_file.write(pupil_data_path)
             print(f"Recording path written to: {temp_path}")
             print(f"Set RECORDING_PATH to: {record_options.path}")
-            self.pupil_manager.start_recording(record_options.path)
-
+        
         if record_options.simulator_data:
             self.start_recording_script(record_options.path)
         else:
@@ -80,7 +81,7 @@ class StudyManager:
         if self.recording_script_handle:
             self.recording_script_handle.terminate()
             self.recording_script_handle = None
-
+            
     def close_pupil_service(self):
         if self.pupil_service_handle:
             self.pupil_service_handle.terminate()
@@ -91,6 +92,38 @@ class StudyManager:
         self.send_xdotool_keycmd(window_handle, 'ctrl+y') # command to stop video recording
         self.pupil_manager.stop_recoding()
         self.close_recording_script()
+
+    def generate_timestamps(self, exp_dir):
+        exp_dir = Path(exp_dir)
+        timestamp_folder = exp_dir / '000' if (exp_dir / '000').exists() else exp_dir
+        output_timestamps_f = timestamp_folder / 'world_timestamps.npy'
+        
+        reader = ExpReader(exp_dir, verbose=True, ignore_keys=['depth', 'r_img', 'segm'])
+        od = reader._data
+        
+        world_timestamps = np.array(od['data']['time'])
+        if len(world_timestamps) < 2:
+            print("ERROR: Not enough timestamps for interpolation.")
+            return
+        
+        frate = 120  # Recording frame rate
+        time_diffs = np.diff(world_timestamps)
+        frames_per_timestamp = (time_diffs * frate).round().astype(int)
+        upsampled_timestamps = []
+        
+        current_timestamp = world_timestamps[0]
+        for i in range(len(time_diffs)):
+            interval_timestamps = np.linspace(
+                current_timestamp, 
+                current_timestamp + time_diffs[i], 
+                frames_per_timestamp[i], 
+                endpoint=False
+            )
+            upsampled_timestamps.extend(interval_timestamps)
+            current_timestamp += time_diffs[i]
+        
+        np.save(output_timestamps_f, np.array(upsampled_timestamps))
+        print(f"World timestamps saved to: {output_timestamps_f}")
 
     def close(self):
         self.close_simulation()

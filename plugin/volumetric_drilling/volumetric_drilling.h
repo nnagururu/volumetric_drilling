@@ -46,7 +46,7 @@
 #include "footpedal.h"
 #include "camera_panel_manager.h"
 #include "wave_generator.h"
-#include "gaze_marker_controller.h"
+#include "gaze_marker_controller_jagged.h" // change bewteen gaze_marker_controller_smooth vs. gaze_marker_controller_jagged
 #include "drill_manager.h"
 #include "video_recording_controller.h"
 
@@ -139,8 +139,13 @@ private:
     CameraPanelManager m_panelManager;
 
     VideoRecordingController m_videoRecordingController; // Adapting ambf video recording plugin
-
+    double m_timeSinceLastCalibration;
     bool m_isRecording = false;
+    
+    bool m_isCountdownActive; // For pulling back on the camera during recalibration
+    double m_countdownTimer;
+    cTransform m_originalCameraTransform;
+    cLabel* m_calibrationWarningLabel;
 };
 
 

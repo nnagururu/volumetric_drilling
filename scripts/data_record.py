@@ -27,6 +27,11 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, PointCloud2
 from geometry_msgs.msg import WrenchStamped
 
+# For generating higher resolution world_timestamps.npy
+from exp_reader import ExpReader
+import numpy as np
+from pathlib import Path
+
 try:
     from volumetric_drilling_msgs.msg import Voxels, DrillSize, VolumeInfo
 except ImportError:
@@ -230,6 +235,8 @@ def write_to_hdf5():
     #### Save img data and burr_change
     containers = [(f["data"], container), (f["burr_change"], burr_change), (f["drill_force_feedback"], drill_force_feedback)]
     for group, data in containers:
+        if group.name == "/drill_force_feedback":
+            drill_force_data_lock.acquire()
         for key, value in data.items():
             if len(value) > 0:
                 print(f"key {key}")
@@ -238,15 +245,17 @@ def write_to_hdf5():
                 )  # write to disk
                 log.log(logging.INFO, (key, group[key].shape))
             data[key] = []  # reset list to empty memory
-
+        if group.name == "/drill_force_feedback":
+            drill_force_data_lock.release()
+    
     ########################
     #### Save voxels removed
     # TODO: Add metadata of what each column means
     voxel_idx = []
     voxel_color = []
 
-    global voxel_lock
-    voxel_lock.acquire()
+    global voxel_data_lock
+    voxel_data_lock.acquire()
     ###
 
     ###
@@ -291,7 +300,7 @@ def write_to_hdf5():
     except Exception as e:
         print("INFO! No voxels removed in this batch since EXCEPTION:", str(e))
 
-    voxel_lock.release()
+    voxel_data_lock.release()
 
     try:
         # write volume pose
@@ -340,8 +349,8 @@ def timer_callback():
 
 
 def rm_vox_callback(rm_vox_msg):
-    global voxel_lock
-    voxel_lock.acquire()
+    global voxel_data_lock
+    voxel_data_lock.acquire()
 
     # Convert voxel removed and voxel color to numpy
     voxels_colors = []
@@ -357,14 +366,17 @@ def rm_vox_callback(rm_vox_msg):
     collisions["voxel_time_stamp"].append(rm_vox_msg.header.stamp.to_sec())
     collisions["voxel_removed"].append(voxels_indices)
     collisions["voxel_color"].append(voxels_colors)
-    voxel_lock.release()
+    voxel_data_lock.release()
 
 
 def drill_force_feedback_callback(wrench_msg):
+    global drill_force_data_lock
+    drill_force_data_lock.acquire()
     wrench = [wrench_msg.wrench.force.x, wrench_msg.wrench.force.y, wrench_msg.wrench.force.z,
               wrench_msg.wrench.torque.x, wrench_msg.wrench.torque.y, wrench_msg.wrench.torque.z]
     drill_force_feedback['time_stamp'].append(wrench_msg.header.stamp.to_sec())
     drill_force_feedback['wrench'].append(wrench)
+    drill_force_data_lock.release()
 
 
 def burr_change_callback(burr_change_msg):
@@ -486,6 +498,37 @@ def setup_subscriber(args):
     log.log(logging.INFO, "\n".join(["Subscribed to the following topics:"] + topics))
     return subscribers
 
+def generate_timestamps(exp_dir):
+    exp_dir = Path(exp_dir)
+    timestamp_folder = exp_dir / '000' if (exp_dir / '000').exists() else exp_dir
+    output_timestamps_f = timestamp_folder / 'world_timestamps.npy'
+    
+    reader = ExpReader(exp_dir, verbose=True, ignore_keys=['depth', 'r_img', 'segm'])
+    od = reader._data
+    
+    world_timestamps = np.array(od['data']['time'])
+    if len(world_timestamps) < 2:
+        print("ERROR: Not enough timestamps for interpolation.")
+        return
+    
+    frate = 60  # Recording frame rate
+    time_diffs = np.diff(world_timestamps)
+    frames_per_timestamp = (time_diffs * frate).round().astype(int)
+    upsampled_timestamps = []
+    
+    current_timestamp = world_timestamps[0]
+    for i in range(len(time_diffs)):
+        interval_timestamps = np.linspace(
+            current_timestamp, 
+            current_timestamp + time_diffs[i], 
+            frames_per_timestamp[i], 
+            endpoint=False
+        )
+        upsampled_timestamps.extend(interval_timestamps)
+        current_timestamp += time_diffs[i]
+    
+    np.save(output_timestamps_f, np.array(upsampled_timestamps))
+    print(f"World timestamps saved to: {output_timestamps_f}\n")
 
 def main(args):
     container["time"] = []
@@ -518,7 +561,7 @@ def main(args):
     while not finished_recording:
         print('Waiting for recording to finish')
         time.sleep(1.0)
-
+    
     print("Terminating ", __file__)
     # write_to_hdf5()  # save when user exits
 
@@ -601,7 +644,8 @@ if __name__ == "__main__":
 
     terminate_recording = False
     finished_recording = True
-    voxel_lock = Lock()
+    voxel_data_lock = Lock()
+    drill_force_data_lock = Lock()
 
     f, h, w, scale, volume_pose = init_hdf5(args)
 

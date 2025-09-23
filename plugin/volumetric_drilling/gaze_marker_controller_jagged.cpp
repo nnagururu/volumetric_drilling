@@ -37,16 +37,21 @@
 
     \author    <amunawar@jhu.edu>
     \author    Adnan Munawar
+    
+    Modified by: Jonathan Wang
+    This "jagged" gaze marker jumps across the screen instead of
+    gliding smoothly!
 */
 //==============================================================================
-#include "gaze_marker_controller.h"
+
+#include "gaze_marker_controller_jagged.h"
 #include <boost/program_options.hpp>
 
 GazeMarkerController::GazeMarkerController(){
     m_gazeMarker = nullptr;
 }
 
-int GazeMarkerController::init(afWorldPtr a_worldPtr, CameraPanelManager* a_panelManager, p_opt::variables_map &var_map){
+int GazeMarkerController::init(afWorldPtr a_worldPtr, CameraPanelManager* a_panelManager){
     m_gazeMarker = a_worldPtr->getRigidBody("GazeMarker");
     if (!m_gazeMarker){
         cerr << "ERROR! GAZE MARKER RIGID BODY NOT FOUND. CAN'T PERFORM GAZE CALIBRATION MOTION" << endl;
@@ -67,7 +72,7 @@ int GazeMarkerController::init(afWorldPtr a_worldPtr, CameraPanelManager* a_pane
     m_time = m_textShowDuration;
 
     m_posIdx = 10;
-    m_posDur = 7.0;
+    m_posDur = 14.0; // try to double the time
     m_posStartTime = 0.;
 
     m_gridWidth = 0.25;
@@ -75,6 +80,11 @@ int GazeMarkerController::init(afWorldPtr a_worldPtr, CameraPanelManager* a_pane
     m_gridCenter = 0.0;
     m_cornerOffset = 0.05;
 
+    // Reduce size of 3x3 calibration grid
+    double scaleFactor = 0.75;
+    m_gridWidth *= scaleFactor;
+    m_gridHeight *= scaleFactor;
+    m_cornerOffset *= scaleFactor;
 
     m_P_m_c_list = {
         cVector3d(-5.,  m_gridCenter, m_gridCenter),

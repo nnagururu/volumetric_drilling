@@ -26,6 +26,7 @@ Usage:
 #include <iomanip>
 #include <ctime>
 #include <cnpy.h>
+#include <fstream>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -105,7 +106,7 @@ int VideoRecordingController::start_recording(const double world_timestamp) {
     time_t now = time(0);
     string size_str = to_string(m_width) + "x" + to_string(m_height);
     m_video_filename = m_saveDirectory + "/" + "world.mp4";
-    string timestamps_filename = m_saveDirectory + "/" + "world_timestamps.npy";
+    m_timestamps_filename = m_saveDirectory + "/" + "world_timestamps.npy";
 
     // FFmpeg settings
     string cmd = "ffmpeg";
@@ -115,13 +116,14 @@ int VideoRecordingController::start_recording(const double world_timestamp) {
     cmd += " -s " + size_str;
     cmd += " -i -";
     cmd += " -threads 0";
-    cmd += " -preset fast";
+    cmd += " -preset fast"; 
     cmd += " -y";
     cmd += " -pix_fmt yuv420p";
     cmd += " -crf 21"; // Major parameter to tweak video compression and output size
-    cmd += " -vf vflip";
+    // cmd += " -vf vflip";
+    cmd += " -vf \"crop=iw/2:ih:iw/4:0,vflip\"";  // FOR CROPPING MIDDLE 50% OF SCREEN
     cmd += " " + m_video_filename;
-
+    
     // Start FFmpeg process for recording video
     try {
         m_ffmpeg = popen(cmd.c_str(), "w");
@@ -246,16 +248,15 @@ void VideoRecordingController::reset()
 
 }
 
+
 bool VideoRecordingController::close()
 {
     if (m_ffmpeg){
         pclose(m_ffmpeg);
         m_ffmpeg = nullptr;
-        m_timestamps_filename = m_saveDirectory + "/" + "world_timestamps.npy";
         // Save timestamps to file
         try {
             save_timestamps_to_npy(m_timestamps_filename, m_recorded_timestamps);
-            cerr << "INFO! Timestamps saved to: " << m_timestamps_filename << "\n";
         } catch (const exception& e) {
             cerr << "ERROR! Failed to save timestamps: " << e.what() << "\n";
             return false;

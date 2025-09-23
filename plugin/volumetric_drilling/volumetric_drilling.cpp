@@ -197,7 +197,24 @@ int afVolmetricDrillingPlugin::init(int argc, char **argv, const afWorldPtr a_af
         cerr << "WARNING! NO FOOTPEDAL INTERFACE FOUND \n";
     }
 
-    m_gazeMarkerController.init(m_worldPtr, &m_panelManager, var_map);
+    m_gazeMarkerController.init(m_worldPtr, &m_panelManager);
+    cerr << "INFO! GAZE MARKER INITIALIZED \n";
+    m_timeSinceLastCalibration = 0.0;
+
+    m_originalCameraTransform = m_mainCamera->getLocalTransform();
+    cFontPtr font = NEW_CFONTCALIBRI36();
+    m_calibrationWarningLabel = new cLabel(font);
+    m_calibrationWarningLabel->m_fontColor.setBlack();
+    m_calibrationWarningLabel->setCornerRadius(10, 10, 10, 10);
+    m_calibrationWarningLabel->setColor(cColorf(1., 1., 0.2));
+    m_calibrationWarningLabel->setTransparencyLevel(0.8);
+    m_calibrationWarningLabel->setShowPanel(true);
+    m_calibrationWarningLabel->setShowEnabled(false);
+    m_panelManager.addPanel(m_calibrationWarningLabel, 0.5, 0.5, 
+                        PanelReferenceOrigin::CENTER, PanelReferenceType::NORMALIZED);
+    m_panelManager.setVisible(m_calibrationWarningLabel, false);
+    m_isCountdownActive = false;
+    m_countdownTimer = 0.0;
     return 1;
 }
 
@@ -218,16 +235,54 @@ void afVolmetricDrillingPlugin::graphicsUpdate(){
     m_volumeObject->getShaderProgram()->setUniformi("shadowMap", C_TU_SHADOWMAP);
 
     static double last_time = 0.0;
-
     double dt = m_worldPtr->getWallTime() - last_time;
     last_time = m_worldPtr->getWallTime();
+    // Update the timer
+    if (m_isRecording) {
+        m_timeSinceLastCalibration += dt;
+        
+        // Check if 280 seconds passed and not in countdown
+        if (m_timeSinceLastCalibration >= 320 && !m_isCountdownActive) {
+            cerr << "INFO! Starting calibration countdown" << endl;
+            m_isCountdownActive = true;
+            m_countdownTimer = 3.0; // 3-second countdown
+            m_calibrationWarningLabel->setShowEnabled(true);
+            m_calibrationWarningLabel->setShowPanel(true); // Show background
+            m_panelManager.setVisible(m_calibrationWarningLabel, true);
 
+        }
+        m_videoRecordingController.update(m_worldPtr->getCurrentTimeStamp());
+    }
+
+    // Handle active countdown
+    if (m_isCountdownActive) {
+        m_countdownTimer -= dt;
+        int remaining = static_cast<int>(ceil(m_countdownTimer));
+        
+        if (remaining > 0) {
+            string text = "Calibration starting in " + to_string(remaining) + "...\n";
+            text += "Returning to default view";
+            m_panelManager.setText(m_calibrationWarningLabel, text);
+        }
+        else {
+            // Countdown complete
+            m_calibrationWarningLabel->setShowEnabled(false);
+            m_calibrationWarningLabel->setShowPanel(false); // Show background
+            m_panelManager.setVisible(m_calibrationWarningLabel, false);
+            m_isCountdownActive = false;
+            m_timeSinceLastCalibration = 0.0;
+            
+            // Reset camera to original view
+            m_mainCamera->setLocalTransform(m_originalCameraTransform);
+            
+            // Restart calibration sequence
+            cerr << "INFO! Restarting gaze calibration" << endl;
+            m_gazeMarkerController.restart();
+        }
+    }
     m_gazeMarkerController.update(dt);
     updateButtons();
     m_panelManager.update();
-    if (m_isRecording) {
-        m_videoRecordingController.update(m_worldPtr->getCurrentTimeStamp());
-    }
 }
 
 void afVolmetricDrillingPlugin::physicsUpdate(double dt){
@@ -547,6 +602,7 @@ void afVolmetricDrillingPlugin::keyboardUpdate(GLFWwindow *a_window, int a_key, 
 
         else if (a_key == GLFW_KEY_G){
             m_gazeMarkerController.restart();
+            m_timeSinceLastCalibration = 0;
             // commands for video_recording_controller
             // Fetch the recording path from the environment variable or a pre-defined location
             m_isRecording = !m_isRecording;

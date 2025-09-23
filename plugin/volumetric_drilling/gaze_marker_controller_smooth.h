@@ -37,6 +37,10 @@
 
     \author    <amunawar@jhu.edu>
     \author    Adnan Munawar
+
+    Modified by: Jonathan Wang
+    This "smooth" gaze marker glides smoothly across the screen instead
+    of jumping positions.
 */
 //==============================================================================
 #ifndef GAZE_MARKER_CONTROLLER_H
@@ -53,7 +57,7 @@ class GazeMarkerController{
 public:
     GazeMarkerController();
 
-    int init(afWorldPtr a_worldPtr, CameraPanelManager* a_panelManager, p_opt::variables_map& var_map);
+    int init(afWorldPtr a_worldPtr, CameraPanelManager* a_panelManager);
 
     void initializeLabels();
 
@@ -64,6 +68,10 @@ public:
     void restart();
 
     CameraPanelManager* m_panelManager;
+
+    void startTransition();
+
+    void handleTransition();
 
 
 private:
@@ -88,7 +96,14 @@ private:
     double m_cornerOffset;
 
     std::vector<cVector3d> m_P_m_c_list;
-    
+
+    double m_transitionDuration;
+    bool m_transitioning;
+    double m_transitionStartTime;
+    cVector3d m_startTransitionPos;
+    cVector3d m_endTransitionPos;
+
+    cMatrix3d computeRotationToCamera(const cVector3d& position);
 };
 
 #endif

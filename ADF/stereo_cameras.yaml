@@ -10,10 +10,10 @@ namespace: /ambf/env/
 stereoL:
   namespace: cameras/
   name: stereoL
-  location: {x: 0.0, y: 0.0, z: 0.0}
+  location: {x: 1.5, y: 0.0, z: 0.0} # adjusted x-value from 0 to pull back on camera
   look at: {x: -1.0, y: 0.0, z: 0.0}
   up: {x: 0.0, y: 0.0, z: 1.0}
-  clipping plane: {near: 2.0135309278350517, far: 1006.7654639175257}
+  clipping plane: {near: 0.1, far: 100.0}
   field view angle: 0.17951634837990105
   monitor: 0
   # multipass: true
@@ -37,7 +37,7 @@ stereoL:
 stereoR:
   namespace: cameras/
   name: stereoR
-  location: {x: 0.0, y: 0.5033827319587629, z: 0.0}
+  location: {x: 1.5, y: 0.5033827319587629, z: 0.0} # adjusted x-value from 0 to pull back on camera
   look at: {x: -1.0, y: 0.5033827319587629, z: 0.0}
   up: {x: 0.0, y: 0.0, z: 1.0}
   clipping plane: {near: 2.0135309278350517, far: 1006.7654639175257}

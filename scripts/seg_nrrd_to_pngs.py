@@ -114,7 +114,8 @@ class NrrdConverter:
         y_step = self.y_dim_ratio
         x_step = self.x_dim_ratio
 
-        self.nrrd_data = data[:, ::x_step, ::y_step, ::z_step]
+        if len(data.shape) == 3: self.nrrd_data = np.expand_dims(data[::x_step, ::y_step, ::z_step], axis=0)
+        else: self.nrrd_data = data[:, ::x_step, ::y_step, ::z_step]
 
     def initialize_image_matrix(self):
         # Create a 3D block where the first index refers to individual images,

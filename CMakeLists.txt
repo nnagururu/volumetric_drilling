@@ -80,8 +80,8 @@ add_library(volumetric_drilling SHARED
     ${vol_plugin_prefix}/drill_manager.h
     ${vol_plugin_prefix}/camera_panel_manager.h
     ${vol_plugin_prefix}/camera_panel_manager.cpp
-    ${vol_plugin_prefix}/gaze_marker_controller.h
-    ${vol_plugin_prefix}/gaze_marker_controller.cpp
+    ${vol_plugin_prefix}/gaze_marker_controller_jagged.h # change btw gaze_marker_controller_smooth and gaze_marker_controller_jagged.h 
+    ${vol_plugin_prefix}/gaze_marker_controller_jagged.cpp
     ${vol_plugin_prefix}/video_recording_controller.h
     ${vol_plugin_prefix}/video_recording_controller.cpp)
 add_dependencies(volumetric_drilling ${catkin_EXPORTED_TARGETS})

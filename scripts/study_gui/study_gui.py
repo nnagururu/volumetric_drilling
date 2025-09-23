@@ -171,13 +171,13 @@ class Ui(QtWidgets.QWidget):
                     # '--plugins', '/home/nimesh/ambf_spacenav_plugin/build/libspacenav_plugin.so',
                     # '--plugins', '/home/amunawa2/ambf_video_recording/build/libsimulator_video_recording.so', # for recording the world view
                     "--spf", '/home/nimesh/ambf_spacenav_plugin/example/spacenav_config.yaml',
-                    # "--nt", "2",
+                    "--nt", "2",
                     "--fp", str(self.gui_configuration.footpedal_device.get())]
             self._current_args = args
             if self.button_video_record.isChecked(): # for video recording pluginF
                 # if self.is_ready_to_record(): # can't check if ready to record because simulator can't be running yet
                 self.add_plugin('/home/amunawa2/ambf_video_recording/build/libsimulator_video_recording.so')
-            self._current_args = self.process_arg_list(self._current_args)
+            # self._current_args = self.process_arg_list(self._current_args)
             print("--fp", str(self.gui_configuration.footpedal_device.get()))
             print(f"Starting simulation with arguments: {self._current_args}")
             # self.study_manager.start_simulation(args)
@@ -185,7 +185,10 @@ class Ui(QtWidgets.QWidget):
             self.button_start_simulation.setText('Close Simulation')
             self.button_start_simulation.setStyleSheet("background-color: RED")
         else:
-            self._ambf_process.close()
+            if self._recording_study:
+                print("Must stop recording first!")
+            else:
+                self._ambf_process.close()
 
     def process_arg_list(self, input_list):
         processed_list = []
@@ -307,6 +310,7 @@ class Ui(QtWidgets.QWidget):
         if self._recording_study:
             # self._recording_process.close()
             self.study_manager.stop_recording()
+            # self.study_manager.stop_recording(self.record_options) # when tried to sync world_timestamps.npy generation
             self._recording_study = False
             self.save_metadata()
             self.button_record_study.setText("Record Study")
@@ -325,6 +329,7 @@ class Ui(QtWidgets.QWidget):
         self._ambf_process.close()
         self._pupil_process.close()
         self.study_manager.close()
+        # self.study_manager.close(self.record_options) # when tried to sync world_timestamps.npy generation
         print('GOOD BYE')
 
     def get_time_as_str(self):
