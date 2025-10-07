@@ -1,9 +1,9 @@
-ambf_executable: /home/amunawa2/ambf/bin/lin-x86_64/ambf_simulator
-footpedal_device: /dev/input/js0
-launch_file: /home/amunawa2/volumetric_drilling_VRE/launch.yaml
+ambf_executable: /home/userstudy/ambf/bin/lin-x86_64/ambf_simulator
+footpedal_device: /dev/input/js8
+launch_file: /home/userstudy/volumetric_drilling_VRE/launch.yaml
 pupil_executable: /usr/bin/pupil_capture
-recording_base_path: /home/amunawa2/UserStudy_24_25
-recording_script_executable: /home/amunawa2/volumetric_drilling_VRE/scripts/data_record.py
+recording_base_path: /home/userstudy/userStudy_2025_2026
+recording_script_executable: /home/userstudy/volumetric_drilling_VRE/scripts/data_record.py
 volume1:
   adf_path: ../../ADF/volume_256_RT143.yaml
   icon_path: ./assets/RT143.png

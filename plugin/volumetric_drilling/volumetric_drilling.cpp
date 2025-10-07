@@ -270,7 +270,7 @@ void afVolmetricDrillingPlugin::graphicsUpdate(){
             m_calibrationWarningLabel->setShowPanel(false); // Show background
             m_panelManager.setVisible(m_calibrationWarningLabel, false);
             m_isCountdownActive = false;
-            m_timeSinceLastCalibration = 0.0;
+            // m_timeSinceLastCalibration = 0.0; // Commenting this out only ensures one calibration sequence
             
             // Reset camera to original view
             m_mainCamera->setLocalTransform(m_originalCameraTransform);

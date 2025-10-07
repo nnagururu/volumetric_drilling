@@ -48,9 +48,14 @@ find_package(Boost COMPONENTS program_options filesystem)
 add_subdirectory(volumetric_drilling_msgs)
 find_package(catkin COMPONENTS volumetric_drilling_msgs)
 
+# Find libudev
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(UDEV REQUIRED libudev)
+
 include_directories(${AMBF_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS})
+include_directories(${UDEV_INCLUDE_DIRS})
 
 include_directories("plugin/volumetric_drilling/cnpy")
 link_directories("plugin/volumetric_drilling/cnpy/build")
@@ -94,7 +99,7 @@ set_property(TARGET camera_hmd PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 
 # Find cnpy library
 find_library(CNPY_LIB cnpy HINTS "plugin/volumetric_drilling/cnpy/build")
-target_link_libraries(volumetric_drilling ${CNPY_LIB} ${ZLIB_LIBRARIES})
+target_link_libraries(volumetric_drilling ${CNPY_LIB} ${ZLIB_LIBRARIES} ${UDEV_LIBRARIES})
 
 # Add cnpy library
 # include_directories("build/cnpy")
