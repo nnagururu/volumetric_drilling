@@ -265,19 +265,13 @@ void JoyStick::poll()
                 // Map FootSwitch keys to non-conflicting custom key codes
                 if (m_keyboard_event.code == KEY_F18) { // Fn23 key from FootSwitch
                     button_index = 3; // Custom high key code instead of B
-                    printf("%d", m_keyboard_event.value);
-                    printf("FootSwitch B -> Custom Key 300 %s\n", m_keyboard_event.value ? "pressed" : "released");
                 }
                 else if (m_keyboard_event.code == KEY_F19) { // Fn24 key from FootSwitch
                     button_index = 4; // Custom high key code instead of C
-                    printf("%d", m_keyboard_event.value);
-                    printf("FootSwitch C -> Custom Key 301 %s\n", m_keyboard_event.value ? "pressed" : "released");
                 }
                 // Add more mappings if needed
                 else if (m_keyboard_event.code == KEY_F17) { // Fn22 key from FootSwitch
                     button_index = 5; // Custom high key code instead of A
-                    printf("%d", m_keyboard_event.value);
-                    printf("FootSwitch A -> Custom Key 302 %s\n", m_keyboard_event.value ? "pressed" : "released");
                 }
                 
                 if (button_index != -1 && button_index < m_state.m_buttons.size()) {

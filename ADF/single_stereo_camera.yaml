@@ -15,8 +15,9 @@ stereoLR:
   up: {x: 0.0, y: 0.0, z: 1.0}
   clipping plane: {near: 0.1, far: 100}
   field view angle: 0.17951634837990105
-  monitor: 2
+  monitor: 1
   stereo: {mode: Passive, eye separation: 0.15, focal length: 200}
+  # window resolution: {width: 3680, height: 1836}
   # multipass: true
   # publish image: true
   # preprocessing shaders:

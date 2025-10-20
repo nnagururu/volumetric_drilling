@@ -44,11 +44,6 @@
 bool FootPedal::isDrillOn()
 {
     if (m_isKeyboard) {
-        // For keyboard: use device clutch button as drill control
-        std::cout << "[DEBUG] LISTENING TO INDEX "
-                  << static_cast<int>(FootPedalKeyboardMap::BURR_STATE) << std::endl;
-        std::cout << "[DEBUG] DEVICE_CLUTCH state: "
-                  << m_state.m_buttons[static_cast<int>(FootPedalKeyboardMap::BURR_STATE)] << std::endl;
         return getButtonState(static_cast<int>(FootPedalKeyboardMap::BURR_STATE)) > 0.0 ? true : false;
     } else {
         // For joystick: use pedal state

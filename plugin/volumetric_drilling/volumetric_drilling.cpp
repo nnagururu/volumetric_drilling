@@ -156,7 +156,7 @@ int afVolmetricDrillingPlugin::init(int argc, char **argv, const afWorldPtr a_af
     double maxStiffness = m_drillManager.m_hapticDevice->getSpecifications().m_maxLinearStiffness / workspaceScaleFactor;
 
     // Set voxels surface contact properties
-    m_voxelObj->m_material->setStiffness(2.0*maxStiffness);
+    m_voxelObj->m_material->setStiffness(3.0*maxStiffness); // increasing haptic feedback (2.0 --> 3.0)
     m_voxelObj->m_material->setDamping(0.0);
     m_voxelObj->m_material->setDynamicFriction(0.0);
     m_voxelObj->setUseMaterial(true);
@@ -239,10 +239,10 @@ void afVolmetricDrillingPlugin::graphicsUpdate(){
     last_time = m_worldPtr->getWallTime();
     // Update the timer
     if (m_isRecording) {
-        m_timeSinceLastCalibration += dt;
+        // m_timeSinceLastCalibration += dt; // Commenting this out only ensures one calibration sequence
         
-        // Check if 280 seconds passed and not in countdown
-        if (m_timeSinceLastCalibration >= 320 && !m_isCountdownActive) {
+        // Check if 320 seconds passed and not in countdown
+        if (m_timeSinceLastCalibration >= 100 && !m_isCountdownActive) {
             cerr << "INFO! Starting calibration countdown" << endl;
             m_isCountdownActive = true;
             m_countdownTimer = 3.0; // 3-second countdown
@@ -348,6 +348,7 @@ void afVolmetricDrillingPlugin::physicsUpdate(double dt){
     if (m_drillManager.m_isOn){
         force += (cVector3d(1.0, 1.0, 1.0) * m_waveGenerator.generate(dt));
     }
+
     m_drillManager.m_toolCursorList[0]->setDeviceLocalForce(force);
     m_drillManager.m_drillingPub->publishForceFeedback(force, force, m_worldPtr->getCurrentTimeStamp());
     double maxF = m_drillManager.m_hapticDevice->getSpecifications().m_maxLinearForce;
@@ -607,7 +608,7 @@ void afVolmetricDrillingPlugin::keyboardUpdate(GLFWwindow *a_window, int a_key, 
             // Fetch the recording path from the environment variable or a pre-defined location
             m_isRecording = !m_isRecording;
             if (m_isRecording) {
-                const std::string tempPath = "/home/amunawa2/volumetric_drilling_VRE/scripts/study_gui/Simulator_Recordings/tmp/recording_path.txt";
+                const std::string tempPath = "/home/userstudy/volumetric_drilling_VRE/scripts/study_gui/Simulator_Recordings/tmp/recording_path.txt";
                 std::string recordingPath;
                 std::ifstream inputFile(tempPath);
                 if (inputFile.is_open()) {
@@ -616,7 +617,7 @@ void afVolmetricDrillingPlugin::keyboardUpdate(GLFWwindow *a_window, int a_key, 
                     std::cerr << "Read recording path from file: " << recordingPath << std::endl;
                 } else {
                     std::cerr << "Failed to open temp file: " << tempPath << std::endl;
-                    recordingPath = "/home/amunawa2/UserStudy_24_25"; // Fallback path if no environment variable is set
+                    recordingPath = "/home/userstudy/userStudy_2025_2026/"; // Fallback path if no environment variable is set
                 }
                 // Ensure the directory exists
                 if (!fs::exists(recordingPath)) {
