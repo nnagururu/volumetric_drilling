@@ -72,7 +72,7 @@ int GazeMarkerController::init(afWorldPtr a_worldPtr, CameraPanelManager* a_pane
     m_time = m_textShowDuration;
 
     m_posIdx = 10;
-    m_posDur = 10.0; // try to double the time
+    m_posDur = 5.0; // try to double the time
     m_posStartTime = 0.;
 
     m_gridWidth = 0.25;

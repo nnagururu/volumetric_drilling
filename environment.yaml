@@ -1,0 +1,23 @@
+name: ros_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - numpy=1.21
+  - opencv
+  - h5py
+  - pyyaml
+  - pip
+  - libffi=3.4
+  - libgcc-ng
+  - libstdcxx-ng
+  - pip:
+    - rospkg
+    - rospy
+    - catkin-pkg
+    - ros-numpy
+    - natsort
+    - matplotlib
+    - scipy
+    - sensor-msgs

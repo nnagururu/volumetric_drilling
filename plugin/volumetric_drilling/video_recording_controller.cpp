@@ -92,6 +92,11 @@ int VideoRecordingController::init(const afWorldPtr a_afWorld, const string& sta
     m_saveDirectory = startingDir; // save inside the pupil data folder of 000
     cerr << "Recording save directory: " << m_saveDirectory << endl;
 
+    // Calculate and save camera intrinsics
+    calculateCameraIntrinsics();
+    m_intrinsics_filename = m_saveDirectory + "/" + "world.intrinsics";  // Changed to .intrinsics
+    saveIntrinsicsToFile(m_intrinsics_filename);
+    
     cerr << "INFO! Variables initialized successfully.\n";
     return 1;
 }
@@ -268,3 +273,66 @@ bool VideoRecordingController::close()
 }
 
 
+void VideoRecordingController::calculateCameraIntrinsics() {
+    // Get camera parameters from your AMBF camera
+    double fov_angle = m_camera->getFieldViewAngle(); // radians
+    double width = m_camera->m_width;
+    double height = m_camera->m_height;
+    
+    // Calculate focal length from field of view
+    // f = (width / 2) / tan(fov_angle / 2)
+    double focal_length_x = (width / 2.0) / tan(fov_angle / 2.0);
+    double focal_length_y = (height / 2.0) / tan(fov_angle / 2.0);
+    
+    // For most cameras, we assume fx ≈ fy
+    double fx = focal_length_x;
+    double fy = focal_length_y;
+    
+    // Principal point (usually center of image)
+    double cx = width / 2.0;
+    double cy = height / 2.0;
+    
+    // Create camera intrinsics matrix
+    // [fx  0  cx]
+    // [0  fy  cy]
+    // [0   0   1]
+    m_camera_intrinsics << fx,  0,  cx,
+                           0,  fy,  cy,
+                           0,   0,   1;
+    
+    cerr << "Camera Intrinsics Calculated:\n";
+    cerr << "FOV: " << fov_angle << " rad (" << fov_angle * 180.0/M_PI << " deg)\n";
+    cerr << "Resolution: " << width << " x " << height << "\n";
+    cerr << "Focal Length (fx, fy): " << fx << ", " << fy << "\n";
+    cerr << "Principal Point (cx, cy): " << cx << ", " << cy << "\n";
+}
+
+void VideoRecordingController::saveIntrinsicsToFile(const string& filename) {
+    try {
+        ofstream file(filename);
+        if (!file.is_open()) {
+            throw runtime_error("Cannot open file for writing: " + filename);
+        }
+        
+        // Save in world.intrinsics format
+        // Format typically used by computer vision applications
+        file << "intrinsic" << endl;
+        file << m_camera_intrinsics(0,0) << " " << m_camera_intrinsics(0,1) << " " << m_camera_intrinsics(0,2) << endl;
+        file << m_camera_intrinsics(1,0) << " " << m_camera_intrinsics(1,1) << " " << m_camera_intrinsics(1,2) << endl;
+        file << m_camera_intrinsics(2,0) << " " << m_camera_intrinsics(2,1) << " " << m_camera_intrinsics(2,2) << endl;
+        
+        file.close();
+        cerr << "INFO! Camera intrinsics saved to: " << filename << "\n";
+        
+        // Also save as numpy array for convenience
+        vector<double> intrinsics_data = {
+            m_camera_intrinsics(0,0), m_camera_intrinsics(0,1), m_camera_intrinsics(0,2),
+            m_camera_intrinsics(1,0), m_camera_intrinsics(1,1), m_camera_intrinsics(1,2),
+            m_camera_intrinsics(2,0), m_camera_intrinsics(2,1), m_camera_intrinsics(2,2)
+        };
+        cnpy::npy_save(filename + ".npy", intrinsics_data.data(), {3, 3}, "w");
+        
+    } catch (const exception& e) {
+        throw runtime_error("Failed to save camera intrinsics: " + string(e.what()));
+    }
+}

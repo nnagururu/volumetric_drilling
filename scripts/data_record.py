@@ -169,18 +169,32 @@ def init_hdf5(args):
     )
 
     # baseline info from stereo adf
-    if args.stereo:
-        adf = args.stereo_adf
-        stereo_adf = open(adf, "r")
-        stereo_params = yaml.safe_load(stereo_adf)
-        baseline = (
-            math.fabs(
-                stereo_params["stereoL"]["location"]["y"]
-                - stereo_params["stereoR"]["location"]["y"]
-            )
-            * s
-        )
-        metadata.create_dataset("baseline", data=baseline)
+    # if args.stereo:
+    #     adf = args.stereo_adf
+    #     stereo_adf = open(adf, "r")
+    #     stereo_params = yaml.safe_load(stereo_adf)
+    #     baseline = (
+    #         math.fabs(
+    #             stereo_params["stereoL"]["location"]["y"]
+    #             - stereo_params["stereoR"]["location"]["y"]
+    #         )
+    #         * s
+    #     )
+    #     metadata.create_dataset("baseline", data=baseline)
+
+    # Only create datasets if streams exist
+    if args.stereoL_topic != "None" or args.stereoR_topic != "None":
+        # set default value first
+        baseline_value = 0.0
+        if args.stereo:
+            with open(args.stereo_adf, "r") as stereo_adf:
+                stereo_params = yaml.safe_load(stereo_adf)
+            baseline_value = abs(
+                stereo_params["stereoL"]["location"]["y"] - stereo_params["stereoR"]["location"]["y"]
+            ) * s
+
+        # create the dataset once
+        metadata.create_dataset("baseline", data=baseline_value)
 
     file.create_group("data")
     file.create_group("voxels_removed")
@@ -402,6 +416,7 @@ def setup_subscriber(args):
         log.log(logging.CRITICAL, "CRITICAL! Launch simulation before recording!")
         exit()
 
+    '''
     if args.stereoL_topic != "None":
         if args.stereoL_topic in active_topics:
             stereoL_sub = message_filters.Subscriber(args.stereoL_topic, Image)
@@ -441,6 +456,42 @@ def setup_subscriber(args):
         else:
             log.log(logging.CRITICAL, "CRITICAL! Failed to subscribe to " + args.segm_topic)
             exit()
+    '''
+
+    # Optional stereo left
+    if args.stereoL_topic != "None" and args.stereoL_topic in active_topics:
+        stereoL_sub = message_filters.Subscriber(args.stereoL_topic, Image)
+        subscribers.append(stereoL_sub)
+        container["l_img"] = []
+        topics.append(args.stereoL_topic)
+    else:
+        log.log(logging.WARNING, "StereoL topic not available, skipping.")
+
+    # Optional depth
+    if args.depth_topic != "None" and args.depth_topic in active_topics:
+        depth_sub = message_filters.Subscriber(args.depth_topic, PointCloud2)
+        subscribers.append(depth_sub)
+        container["depth"] = []
+        topics.append(args.depth_topic)
+    else:
+        log.log(logging.WARNING, "Depth topic not available, skipping.")
+
+    # Optional stereo right
+    if args.stereoR_topic != "None" and args.stereoR_topic in active_topics:
+        stereoR_sub = message_filters.Subscriber(args.stereoR_topic, Image)
+        subscribers.append(stereoR_sub)
+        container["r_img"] = []
+        topics.append(args.stereoR_topic)
+    else:
+        log.log(logging.WARNING, "StereoR topic not available, skipping.")
+
+    if args.segm_topic != "None" and args.segm_topic in active_topics:
+        segm_sub = message_filters.Subscriber(args.segm_topic, Image)
+        subscribers.append(segm_sub)
+        container["segm"] = []
+        topics.append(args.segm_topic)
+    else:
+        log.log(logging.WARNING, "Segmentation topic not available, skipping.")
 
     if args.rm_vox_topic != "None":
         if args.rm_vox_topic in active_topics:

@@ -309,8 +309,8 @@ class Ui(QtWidgets.QWidget):
     def pressed_record_study(self):
         if self._recording_study:
             # self._recording_process.close()
-            self.study_manager.stop_recording()
-            # self.study_manager.stop_recording(self.record_options) # when tried to sync world_timestamps.npy generation
+            # self.study_manager.stop_recording()
+            self.study_manager.stop_recording(self.record_options) # when tried to sync world_timestamps.npy generation
             self._recording_study = False
             self.save_metadata()
             self.button_record_study.setText("Record Study")
