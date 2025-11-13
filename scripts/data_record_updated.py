@@ -384,51 +384,118 @@ def create_and_store_dataset(group, key, data, compression="gzip"):
         log.log(logging.INFO, (key, group[key].shape))
 
 
+# def write_voxel_data(collisions):
+#     """
+#     Process and write voxel data to HDF5.
+    
+#     :param collisions: Dictionary containing voxel-related data.
+#     :return: None
+#     """
+#     voxel_idx, voxel_color = [], []
+
+#     try:
+#         assert len(collisions["voxel_color"]) == len(collisions["voxel_removed"]) == len(collisions["voxel_time_stamp"]), \
+#             "Dimension mismatch in voxel data"
+#     except AssertionError:
+#         print("Voxel data dimension mismatch:", collisions)
+#         raise
+
+#     for idx in range(len(collisions["voxel_time_stamp"])):
+#         num_removed = collisions["voxel_removed"][idx].shape[0]
+#         if num_removed > 0:
+#             idx_column = np.ones((num_removed, 1)) * idx
+#             voxel_idx.append(np.hstack((idx_column, collisions["voxel_removed"][idx])))
+#             voxel_color.append(np.hstack((idx_column, collisions["voxel_color"][idx])))
+
+#     # Combine the voxel data and write it to the HDF5 file
+#     try:
+#         voxel_idx = np.vstack(voxel_idx)
+#         voxel_color = np.vstack(voxel_color)
+#         voxel_data = {
+#             "voxel_time_stamp": collisions["voxel_time_stamp"],
+#             "voxel_removed": voxel_idx,
+#             "voxel_color": voxel_color,
+#         }
+#         # Create voxels_removed group under physics_data/intermittent_data
+#         voxels_group = f["physics_data/intermittent_data"].create_group("voxels_removed")
+#         for key, value in voxel_data.items():
+#             print(f"key {key}")
+#             voxels_group.create_dataset(key, data=value, compression="gzip")
+#             log.log(logging.INFO, (key, voxels_group[key].shape))
+#             collisions[key] = []  # Reset to free memory
+#         voxels_group.create_dataset("README", data = "voxels_removed contains a group of voxels (Gv) removed. \n"
+#                                            "The voxel_time_stamp contains the time that the Gv was removed. The voxels_removed contains the voxels that comprise the Gv. \n"
+#                                            "The voxel_color contains the color of voxels that comprise the Gv. \n")
+#     except Exception as e:
+#         print("INFO! No voxels removed in this batch due to exception:", str(e))
+
 def write_voxel_data(collisions):
     """
-    Process and write voxel data to HDF5.
+    Process and write voxel data to an HDF5 file in a thread-safe manner.
+
+    This function collects voxel removal and color information from a batch
+    of collisions, verifies data consistency, and writes it under 
+    'physics_data/intermittent_data/voxels_removed' in the HDF5 file. 
+    Thread safety is ensured using a global lock `voxel_data_lock`.
+
+    :param collisions: Dictionary containing voxel-related data with keys:
+        - "voxel_removed": List of numpy arrays of removed voxel coordinates.
+        - "voxel_color": List of numpy arrays of voxel colors corresponding to removed voxels.
+        - "voxel_time_stamp": List of timestamps for when voxels were removed.
+    :return: None. Data is written directly to the HDF5 file.
     
-    :param collisions: Dictionary containing voxel-related data.
-    :return: None
+    Notes:
+        - If the dimension of any of the voxel arrays does not match, the batch is skipped.
+        - After writing, the original voxel lists in `collisions` are cleared to free memory.
+        - If no voxels are removed in the batch, nothing is written.
     """
-    voxel_idx, voxel_color = [], []
-
+    global voxel_data_lock
+    voxel_data_lock.acquire()
     try:
-        assert len(collisions["voxel_color"]) == len(collisions["voxel_removed"]) == len(collisions["voxel_time_stamp"]), \
-            "Dimension mismatch in voxel data"
-    except AssertionError:
-        print("Voxel data dimension mismatch:", collisions)
-        raise
+        voxel_idx, voxel_color = [], []
 
-    for idx in range(len(collisions["voxel_time_stamp"])):
-        num_removed = collisions["voxel_removed"][idx].shape[0]
-        if num_removed > 0:
-            idx_column = np.ones((num_removed, 1)) * idx
-            voxel_idx.append(np.hstack((idx_column, collisions["voxel_removed"][idx])))
-            voxel_color.append(np.hstack((idx_column, collisions["voxel_color"][idx])))
+        # Ensure all required keys exist in the collisions dictionary
+        if not all(k in collisions for k in ["voxel_removed", "voxel_color", "voxel_time_stamp"]):
+            return
 
-    # Combine the voxel data and write it to the HDF5 file
-    try:
-        voxel_idx = np.vstack(voxel_idx)
-        voxel_color = np.vstack(voxel_color)
-        voxel_data = {
-            "voxel_time_stamp": collisions["voxel_time_stamp"],
-            "voxel_removed": voxel_idx,
-            "voxel_color": voxel_color,
-        }
-        # Create voxels_removed group under physics_data/intermittent_data
-        voxels_group = f["physics_data/intermittent_data"].create_group("voxels_removed")
-        for key, value in voxel_data.items():
-            print(f"key {key}")
-            voxels_group.create_dataset(key, data=value, compression="gzip")
-            log.log(logging.INFO, (key, voxels_group[key].shape))
-            collisions[key] = []  # Reset to free memory
-        voxels_group.create_dataset("README", data = "voxels_removed contains a group of voxels (Gv) removed. \n"
-                                           "The voxel_time_stamp contains the time that the Gv was removed. The voxels_removed contains the voxels that comprise the Gv. \n"
-                                           "The voxel_color contains the color of voxels that comprise the Gv. \n")
-    except Exception as e:
-        print("INFO! No voxels removed in this batch due to exception:", str(e))
+        # Validate dimensions
+        try:
+            assert len(collisions["voxel_color"]) == len(collisions["voxel_removed"]) == len(collisions["voxel_time_stamp"]), \
+                "Dimension mismatch in voxel data"
+        except AssertionError:
+            print("Voxel data dimension mismatch:", collisions)
+            return  # Skip writing this batch
 
+        # Process each time step in the batch
+        for idx in range(len(collisions["voxel_time_stamp"])):
+            num_removed = collisions["voxel_removed"][idx].shape[0]
+            if num_removed > 0:
+                idx_column = np.ones((num_removed, 1)) * idx
+                voxel_idx.append(np.hstack((idx_column, collisions["voxel_removed"][idx])))
+                voxel_color.append(np.hstack((idx_column, collisions["voxel_color"][idx])))
+
+        # Write processed voxel data to HDF5 if any were removed
+        if voxel_idx:
+            voxel_idx = np.vstack(voxel_idx)
+            voxel_color = np.vstack(voxel_color)
+            voxel_data = {
+                "voxel_time_stamp": collisions["voxel_time_stamp"],
+                "voxel_removed": voxel_idx,
+                "voxel_color": voxel_color,
+            }
+            voxels_group = f["physics_data/intermittent_data"].create_group("voxels_removed")
+            for key, value in voxel_data.items():
+                voxels_group.create_dataset(key, data=value, compression="gzip")
+                collisions[key] = []  # Clear memory for next batch
+            voxels_group.create_dataset(
+                "README",
+                data="voxels_removed contains a group of voxels removed. "
+                     "voxel_time_stamp contains the removal times, "
+                     "voxel_removed contains voxel coordinates, "
+                     "voxel_color contains the colors of removed voxels."
+            )
+    finally:
+        voxel_data_lock.release()
 
 # CHANGED, NEW FUNCTION
 def write_high_frequency_pose_data(high_freq_pose_data):
@@ -778,12 +845,23 @@ def main(args):
     print("Synchronous? : ", args.sync)
     # NOTE: don't set queue size to a large number (e.g. 1000).
     # Otherwise, the time taken to compute synchronization becomes very long and no more message will be spit out.
-    if args.sync is False:
-        ats = message_filters.ApproximateTimeSynchronizer(subscribers, queue_size=50, slop=0.01)
+    if len(subscribers) > 1:
+        if args.sync:
+            ats = TimeSynchronizer(subscribers, queue_size=50)
+        else:
+            ats = message_filters.ApproximateTimeSynchronizer(subscribers, queue_size=50, slop=0.01)
         ats.registerCallback(callback, container.keys())
     else:
-        ats = TimeSynchronizer(subscribers, queue_size=50)
-        ats.registerCallback(callback, container.keys())
+        # Only 1 subscriber — no sync needed, just attach callback
+        for sub in subscribers:
+            sub.registerCallback(lambda msg, key=list(container.keys())[0]: callback(msg, {key: msg}))
+
+    #if args.sync is False:
+    #    ats = message_filters.ApproximateTimeSynchronizer(subscribers, queue_size=50, slop=0.01)
+    #    ats.registerCallback(callback, container.keys())
+    #else:
+    #    ats = TimeSynchronizer(subscribers, queue_size=50)
+    #    ats.registerCallback(callback, container.keys())
 
     # separate thread for writing to hdf5 to release memory
     # rospy.Timer(rospy.Duration(0, 500000), timer_callback)  # set to 2Khz such that we don't miss pose data

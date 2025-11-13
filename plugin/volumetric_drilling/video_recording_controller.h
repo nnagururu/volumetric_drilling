@@ -70,6 +70,7 @@ protected:
     string m_saveDirectory;               // Directory to save the video
     string m_timestamps_filename;         // Filename for world timestamps.npy file
     vector<double> m_recorded_timestamps; // Recorded time stamps
+    // afVolumePtr m_volume;
 };
 
 #endif

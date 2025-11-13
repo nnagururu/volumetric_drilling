@@ -46,12 +46,14 @@ main_camera:
   namespace: cameras/
   name: main_camera
   location: {x: 1.5, y: 0.0, z: 0.0} # adjusted x-value from 0 to pull back on camera
+  # location: {x: -5.2, y: 0.12, z: 0.05} # looking down the EAR for the first volume
   look at: {x: -6.040592783505154, y: 0.0, z: 0.0}
   # up: {x: 0.0, y: 0.4, z: 1.0}
   up: {x: 0.0, y: 0.0, z: 1.0}
   clipping plane: {near: 0.1, far: 100.0}
   field view angle: 0.17951634837990105 # so that focal length is approximately 1000px and phantom is 250 mm away
   monitor: 0
+  # window resolution: {width: 1024, height: 720}
   # multipass: true
   visible: true
   # publish image: true

@@ -233,6 +233,8 @@ void afVolmetricDrillingPlugin::graphicsUpdate(){
     }
     m_volumeObject->getShaderProgram()->setUniformi("uMatcapMap", C_TU_AO);
     m_volumeObject->getShaderProgram()->setUniformi("shadowMap", C_TU_SHADOWMAP);
+    m_volumeObject->getShaderProgram()->setUniformf("uAlphaThreshold", 0.85);
+    m_volumeObject->getShaderProgram()->setUniformi("uEnableDVR", 1);
 
     static double last_time = 0.0;
     double dt = m_worldPtr->getWallTime() - last_time;

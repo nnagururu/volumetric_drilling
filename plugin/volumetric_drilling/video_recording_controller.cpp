@@ -76,6 +76,7 @@ int VideoRecordingController::init(const afWorldPtr a_afWorld, const string& sta
 
     m_worldPtr = a_afWorld;
     m_camera = m_worldPtr->getCameras()[0];
+    // m_volume = m_worldPtr->getVolumes()[0];
 
     // Copy resolution from the camera
     m_width = m_camera->m_width;
@@ -218,7 +219,10 @@ void VideoRecordingController::mouseScrollUpdate(GLFWwindow *a_window, double x_
 void VideoRecordingController::update(const double current_timestamp)
 {
     try {
+        // m_volume->getShaderProgram()->setUniformf("uAlphaThreshold", 0.2);
+        // m_volume->getShaderProgram()->setUniformi("uEnableDVR", 0);
         m_frameBuffer->renderView();
+        // m_volume->getShaderProgram()->setUniformi("uEnableDVR", 1);
         m_frameBuffer->copyImageBuffer(m_image);
 
         // Write the frame data to FFmpeg
