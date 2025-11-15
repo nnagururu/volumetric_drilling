@@ -66,6 +66,14 @@ public:
     void hide(bool val);
 
     void restart();
+    
+    void showMarkerAtCameraCenter();
+
+    void hideMarker();
+
+    void toggleMarker();
+
+    bool isMarkerVisible();
 
     CameraPanelManager* m_panelManager;
 
@@ -93,6 +101,7 @@ private:
 
     std::vector<cVector3d> m_P_m_c_list;
     
+    bool m_manualControl;  // Flag to indicate manual marker control
 };
 
 #endif

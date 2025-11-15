@@ -616,9 +616,9 @@ void afVolmetricDrillingPlugin::keyboardUpdate(GLFWwindow *a_window, int a_key, 
                 if (inputFile.is_open()) {
                     std::getline(inputFile, recordingPath);
                     inputFile.close();
-                    std::cerr << "Read recording path from file: " << recordingPath << std::endl;
+                    cerr << "Read recording path from file: " << recordingPath << std::endl;
                 } else {
-                    std::cerr << "Failed to open temp file: " << tempPath << std::endl;
+                    cerr << "Failed to open temp file: " << tempPath << std::endl;
                     recordingPath = "/home/userstudy/userStudy_2025_2026/"; // Fallback path if no environment variable is set
                 }
                 // Ensure the directory exists
@@ -636,6 +636,21 @@ void afVolmetricDrillingPlugin::keyboardUpdate(GLFWwindow *a_window, int a_key, 
             }
         }
 
+
+        else if (a_key == GLFW_KEY_M) { // Toggle between hiding and showing the Gaze Marker (only if recording 1) Data + 2) Pupils)
+            if (m_isRecording) {
+                m_gazeMarkerController.toggleMarker();
+                
+                if (m_gazeMarkerController.isMarkerVisible()) {
+                    cerr << "INFO! Gaze marker shown at camera center" << endl;
+                } else {
+                    cerr << "INFO! Gaze marker hidden" << endl;
+                }
+            } else {
+                cerr << "WARNING! Cannot toggle gaze marker - recording is not active" << endl;
+            }
+        }
+        
         else if (a_key == GLFW_KEY_Y){ // Stop recording key
             m_videoRecordingController.close();    
             m_isRecording = false;
