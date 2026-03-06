@@ -87,11 +87,14 @@ class StudyManager:
             self.pupil_service_handle.terminate()
             self.pupil_service_handle = None
 
-    def stop_recording(self):
+    def stop_recording(self, record_options):
         window_handle = self._get_ambf_main_window_handle()
-        self.send_xdotool_keycmd(window_handle, 'ctrl+y') # command to stop video recording
-        self.pupil_manager.stop_recoding()
+        print(f"Before stop_recording - Pupil running: {record_options.pupil_data}")
+        if record_options.pupil_data:
+            self.send_xdotool_keycmd(window_handle, 'ctrl+y') # command to stop video recording
+            self.pupil_manager.stop_recoding()
         self.close_recording_script()
+        print("After stop_recording completed")
 
     def generate_timestamps(self, exp_dir):
         exp_dir = Path(exp_dir)

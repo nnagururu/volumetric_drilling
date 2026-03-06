@@ -168,15 +168,15 @@ class Ui(QtWidgets.QWidget):
             args = ['--launch_file', str(self.gui_configuration.launch_file.get()), 
                     '-l', launch_file_adf_indices, 
                     '-a', self.active_volume_adf,
-                    # '--plugins', '/home/nimesh/ambf_spacenav_plugin/build/libspacenav_plugin.so',
-                    # '--plugins', '/home/amunawa2/ambf_video_recording/build/libsimulator_video_recording.so', # for recording the world view
-                    "--spf", '/home/nimesh/ambf_spacenav_plugin/example/spacenav_config.yaml',
+                    '--plugins', '/home/userstudy/catkin_ws/src/ambf_spacenav_plugin/build/libspacenav_plugin.so',
+                    # "--spf", '/home/nimesh/ambf_spacenav_plugin/example/spacenav_config.yaml', # commenting out to try other SpaceNav
+                    # "--spf", '/home/userstudy/catkin_ws/src/ambf_spacenav_plugin/example/spacenav_config.yaml',
                     "--nt", "2",
                     "--fp", str(self.gui_configuration.footpedal_device.get())]
             self._current_args = args
             if self.button_video_record.isChecked(): # for video recording pluginF
                 # if self.is_ready_to_record(): # can't check if ready to record because simulator can't be running yet
-                self.add_plugin('/home/amunawa2/ambf_video_recording/build/libsimulator_video_recording.so')
+                self.add_plugin('/home/userstudy/ambf_video_recording/build/libsimulator_video_recording.so')
             # self._current_args = self.process_arg_list(self._current_args)
             print("--fp", str(self.gui_configuration.footpedal_device.get()))
             print(f"Starting simulation with arguments: {self._current_args}")
@@ -309,8 +309,8 @@ class Ui(QtWidgets.QWidget):
     def pressed_record_study(self):
         if self._recording_study:
             # self._recording_process.close()
-            self.study_manager.stop_recording()
-            # self.study_manager.stop_recording(self.record_options) # when tried to sync world_timestamps.npy generation
+            # self.study_manager.stop_recording()
+            self.study_manager.stop_recording(self.record_options) # when tried to sync world_timestamps.npy generation
             self._recording_study = False
             self.save_metadata()
             self.button_record_study.setText("Record Study")

@@ -51,6 +51,10 @@
 #include <string>
 #include <vector>
 
+#include <dirent.h>
+#include <cstring>
+#include <iostream>
+
 using namespace std;
 
 struct JoyState{
@@ -80,6 +84,11 @@ public:
 
     JoyState m_state;
 
+
+protected:
+
+    bool m_isKeyboard = false;
+
 private:
     int readEvent(int fd, struct js_event *event);
 
@@ -88,6 +97,12 @@ private:
     struct js_event m_event;
 
     double m_pedalValue = 0.;
+
+    int readKeyboardEvent(int fd, struct input_event *event);
+
+    struct input_event m_keyboard_event;
+
+    std::string findFootSwitchDevice();
 };
 
 

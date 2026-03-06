@@ -43,12 +43,24 @@
 
 bool FootPedal::isDrillOn()
 {
-    return getPedalState(0) >= 0.0 ? true : false;
+    if (m_isKeyboard) {
+        return getButtonState(static_cast<int>(FootPedalKeyboardMap::BURR_STATE)) > 0.0 ? true : false;
+    } else {
+        // For joystick: use pedal state
+        return getPedalState(0) >= 0.0 ? true : false;
+    }
 }
 
 bool FootPedal::isChangeBurrSizePressed(){
     bool val = false;
-    bool burrChangeBtnCurrState = getButtonState(static_cast<int>(FootPedalButtonMap::CHANGE_BURR_SIZE));
+    bool burrChangeBtnCurrState;
+    
+    if (m_isKeyboard) {
+        burrChangeBtnCurrState = getButtonState(static_cast<int>(FootPedalKeyboardMap::CHANGE_BURR_SIZE));
+    } else {
+        burrChangeBtnCurrState = getButtonState(static_cast<int>(FootPedalJoystickMap::CHANGE_BURR_SIZE));
+    }
+    
     if (m_burrChangeBtnPrevState == false && burrChangeBtnCurrState == true){
         val = true;
     }
@@ -57,9 +69,13 @@ bool FootPedal::isChangeBurrSizePressed(){
 }
 
 bool FootPedal::isCamClutchPressed(){
-    return getButtonState(static_cast<int>(FootPedalButtonMap::CAM_CLUTCH));
+    if (m_isKeyboard) {
+        return getButtonState(static_cast<int>(FootPedalKeyboardMap::CAM_CLUTCH));
+    } else {
+        return getButtonState(static_cast<int>(FootPedalJoystickMap::CAM_CLUTCH));
+    }
 }
 
 bool FootPedal::isDeviceClutchPressed(){
-    return getButtonState(static_cast<int>(FootPedalButtonMap::DEVICE_CLUTCH));
+    return getButtonState(static_cast<int>(FootPedalJoystickMap::DEVICE_CLUTCH));
 }

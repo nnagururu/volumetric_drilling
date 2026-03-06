@@ -180,11 +180,17 @@ void main(void)
 
     float t_entry = entry(vPosition.xyz, raydir);
     t_entry = max(t_entry, -distance(camera.xyz, vPosition.xyz));
-
-    // uResolution = 300; // Jonathan test to reduce resolution
+    
+    uResolution = 400; // Jonathan test
 
     // estimate a reasonable step size
     float t_step = distance(uMinCorner, uMaxCorner) / uResolution;
+    
+    // Performance: Use larger steps for DVR
+    if (uEnableDVR) {
+        t_step *= 1.25;  // Adjust this value: Higher is worse quality but faster performance
+    }
+
     vec3 tc_step = uTextureScale * (t_step * raydir);
 
     // cast the ray (in model space)
@@ -199,57 +205,42 @@ void main(void)
     for (float t = t_entry; t < 0.0; t += t_step, tc += tc_step)
     {
         float intensity = isoValue(tc);
-        // intensity = texColor.r;
-
-        if (uEnableDVR){
-            if (intensity < 0.005) continue;
-            vec3 tcr = tc;
-            surfacePosition = vPosition.xyz + t * raydir;
-            if (!firstHit) {
-                tcr = refine(tc - tc_step, tc, uIsosurface, 1.0);
-                float dt = length(tcr - tc) / length(tc_step);
-                surfacePosition = vPosition.xyz + (t - dt * t_step) * raydir;
+        if (uEnableDVR) {
+            // Skip empty space
+            if (intensity < 0.02) {
+                continue;
+            }
+            
+            // Simple transfer function
+            float alpha = clamp(intensity * 0.3, 0.0, 1.0);
+            
+            // Track first significant contribution for depth
+            if (!firstHit && alpha > 0.05) {
                 firstHit = true;
-                // calculate fragment depth
-                vec4 clip = gl_ModelViewProjectionMatrix * vec4(surfacePosition, 1.0);
+                vec4 clip = gl_ModelViewProjectionMatrix * vec4(vPosition.xyz + t * raydir, 1.0);
                 gl_FragDepth = (gl_DepthRange.diff * clip.z / clip.w + gl_DepthRange.near + gl_DepthRange.far) * 0.5;
             }
-
-            vec4 texColor = texture3D(uVolume, tcr);
-            vec3 nabla = smoothVolume ? gaussianSmoothedGradient(tcr, 1) : gradient(tcr);
-            // vec3 nabla = gradientSmooth(tc, 1);
-
-            float gradMag = length(nabla);
-
-            // can also tweak gradMag / [X] and also intensity * [Y]
-            // Transfer function for opacity (alpha)
-            float tex_alpha_adj = 0.3;
-            float tex_alpha = clamp(intensity * tex_alpha_adj, 0.0, 1.0); // opacity
-            float grad_alpha = clamp(gradMag, 0.0, 1.0); // could also use intensity
             
-            // Jonathan --> can modify & finetine the values here (weighted values combination)
-            // float alpha = tex_alpha;
-            // alpha += 0.2*grad_alpha;
-            // float alpha = grad_alpha;
-            // float alpha = intensity;
-            float alpha = mix(tex_alpha, grad_alpha, 0.08);
-
-            // alpha = pow(alpha, 1.5); // gamma correction
-
-            // Local shading (optional)
+            // Quick gradient for lighting
+            vec3 nabla = gradient(tc);
             vec3 normal = -normalize(nabla);
             vec3 view = -raydir;
-            vec3 litColor = shade(surfacePosition, view, normal) * texColor.rgb * 3.2;
             
-            // float aoFactor = ambientOcclusion(tc, 0.5);
-            // litColor *= mix(vec3(1.0), vec3(aoFactor), 0.5); // AO modulates final color
-
-            // Pre-multiplied alpha compositing (front-to-back)
+            // Get color from volume
+            vec3 texColor = texture3D(uVolume, tc).rgb;
+            
+            // Simple lighting
+            vec3 litColor = shade(vPosition.xyz + t * raydir, view, normal) * texColor * 3.2;
+            
+            // Composite
             litColor *= alpha;
             sum.rgb += (1.0 - alpha_acc) * litColor;
             alpha_acc += (1.0 - alpha_acc) * alpha;
-
-            if (alpha_acc > 0.95) break;
+            
+            // Early termination
+            if (alpha_acc > 0.95) {
+                break;
+            }
         }
         else{
             if (intensity > uIsosurface){

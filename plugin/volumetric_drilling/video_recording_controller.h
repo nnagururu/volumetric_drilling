@@ -22,6 +22,7 @@ Usage:
 #define VIDEO_RECORDING_H
 #include <afFramework.h>
 #include <stdio.h>
+#include <Eigen/Dense>
 
 using namespace std;
 using namespace ambf;
@@ -50,7 +51,13 @@ public:
     virtual void reset() override;
     bool close();
 
-
+private: 
+    Eigen::Matrix3d m_camera_intrinsics;
+    string m_intrinsics_filename;
+    
+    void calculateCameraIntrinsics();
+    void saveIntrinsicsToFile(const string& filename);
+    
 protected:
     afCameraPtr m_camera;                 // Pointer to the camera
     cFrameBufferPtr m_frameBuffer;        // Frame buffer for the video
@@ -63,6 +70,7 @@ protected:
     string m_saveDirectory;               // Directory to save the video
     string m_timestamps_filename;         // Filename for world timestamps.npy file
     vector<double> m_recorded_timestamps; // Recorded time stamps
+    // afVolumePtr m_volume;
 };
 
 #endif

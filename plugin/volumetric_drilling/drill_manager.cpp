@@ -120,8 +120,8 @@ int DrillManager::init(afWorldPtr a_worldPtr, CameraPanelManager* a_panelManager
 
     string drill_matcap = var_map["dm"].as<string>();
 
-    m_burrMesh = new cShapeSphere(m_activeDrill->m_size);
-    m_burrMesh->setRadius(m_activeDrill->m_size);
+    m_burrMesh = new cShapeSphere(m_activeDrill->m_size * 0.5);
+    m_burrMesh->setRadius(m_activeDrill->m_size * 0.5);
     m_burrMesh->m_material->setBlack();
     m_burrMesh->m_material->setShininess(0);
     m_burrMesh->m_material->m_specular.set(0, 0, 0);
@@ -328,7 +328,7 @@ void DrillManager::toolCursorInit(const afWorldPtr a_afWorld){
 
             // if the haptic device has a gripper, enable it as a user switch
             m_hapticDevice->setEnableGripperUserSwitch(true);
-            m_toolCursorList[i]->setRadius(m_activeDrill->m_size); // Set the correct radius for the tip which is not from the list of cursor radii
+            m_toolCursorList[i]->setRadius(m_activeDrill->m_size * 0.5); // Set the correct radius for the tip which is not from the list of cursor radii
         }
         else
         {
@@ -483,8 +483,8 @@ void DrillManager::updatePoseFromCursors(){
 void DrillManager::cycleDrillTypes(){
     m_activeDrillIdx = (m_activeDrillIdx - 1) % m_drills.size();
     m_activeDrill = m_drills[m_activeDrillIdx];
-    m_toolCursorList[0]->setRadius(m_activeDrill->m_size);
-    m_burrMesh->setRadius(m_activeDrill->m_size);
+    m_toolCursorList[0]->setRadius(m_activeDrill->m_size * 0.5);
+    m_burrMesh->setRadius(m_activeDrill->m_size * 0.5);
     cout << "Drill Type changed to " << m_activeDrill->m_name << endl;
     m_panelManager->setText(m_sizeLabel, "Drill Type: " + m_activeDrill->m_name);
 

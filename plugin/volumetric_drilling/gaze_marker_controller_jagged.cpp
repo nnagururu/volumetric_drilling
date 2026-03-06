@@ -49,6 +49,7 @@
 
 GazeMarkerController::GazeMarkerController(){
     m_gazeMarker = nullptr;
+    m_manualControl = false;
 }
 
 int GazeMarkerController::init(afWorldPtr a_worldPtr, CameraPanelManager* a_panelManager){
@@ -72,7 +73,7 @@ int GazeMarkerController::init(afWorldPtr a_worldPtr, CameraPanelManager* a_pane
     m_time = m_textShowDuration;
 
     m_posIdx = 10;
-    m_posDur = 14.0; // try to double the time
+    m_posDur = 5.0; // try to double the time
     m_posStartTime = 0.;
 
     m_gridWidth = 0.25;
@@ -123,6 +124,11 @@ void GazeMarkerController::initializeLabels(){
 }
 
 void GazeMarkerController::update(double dt){
+    // If in manual control mode, don't auto-hide the marker
+    if (m_manualControl){
+        return;  // Skip calibration logic when in manual mode
+    }
+
     if (m_posIdx >= (m_P_m_c_list.size()+1) || m_gazeMarker == nullptr){
         hide(true);
         return;
@@ -149,7 +155,8 @@ void GazeMarkerController::update(double dt){
     double elapsed_time = m_time - m_textShowDuration - m_posStartTime;
 
     if ((m_time - m_textShowDuration) <= m_posDur && m_posIdx == 0){
-        m_T_m_c = cTransform(m_P_m_c_list[m_posIdx], cMatrix3d());
+        // m_T_m_c = cTransform(m_P_m_c_list[m_posIdx], cMatrix3d());
+        m_T_m_c = cTransform(m_P_m_c_list[m_posIdx], m_mainCamera->getLocalRot());
         m_T_m_w = m_T_c_w * m_T_m_c;
         m_gazeMarker->setLocalTransform(m_T_m_w);
         
@@ -158,7 +165,8 @@ void GazeMarkerController::update(double dt){
     }
 
     if (elapsed_time >= m_posDur){
-        m_T_m_c = cTransform(m_P_m_c_list[m_posIdx], cMatrix3d());
+        // m_T_m_c = cTransform(m_P_m_c_list[m_posIdx], cMatrix3d());
+        m_T_m_c = cTransform(m_P_m_c_list[m_posIdx], m_mainCamera->getLocalRot());
         m_T_m_w = m_T_c_w * m_T_m_c;
         m_gazeMarker->setLocalTransform(m_T_m_w);
 
@@ -178,13 +186,69 @@ void GazeMarkerController::hide(bool val){
 void GazeMarkerController::restart(){
     if (m_gazeMarker){
         cerr << "Restarting Gaze Marker Motion" << endl;
+        // Disable manual control when calibration starts
+        m_manualControl = false;
+
         m_time = 0.;
         m_gazeMarker->reset();
         m_T_c_w = m_mainCamera->getLocalTransform();
+        m_T_m_c = cTransform(cVector3d(-5., 0., 0.), m_mainCamera->getLocalRot());
         m_T_m_w = m_T_c_w * m_T_m_c;;
 
         m_posIdx = 0;
         m_posStartTime = 0.;
 
     }
+}
+
+void GazeMarkerController::showMarkerAtCameraCenter(){
+    if (m_gazeMarker && m_mainCamera){
+        // Enable manual control mode
+        m_manualControl = true;
+
+        // Get current camera transform
+        m_T_c_w = m_mainCamera->getLocalTransform();
+        
+        // Position marker in center of camera view (5 units in front)
+        // m_T_m_c = cTransform(cVector3d(-5., 0., 0.), cMatrix3d());
+        m_T_m_c = cTransform(cVector3d(-5., 0., 0.), m_mainCamera->getLocalRot());
+        
+        // Calculate marker world transform
+        m_T_m_w = m_T_c_w * m_T_m_c;
+        m_gazeMarker->setLocalTransform(m_T_m_w);
+        
+        // Make marker visible
+        m_gazeMarker->getVisualObject()->setShowEnabled(true);
+        
+        cerr << "Marker shown at camera center (manual control enabled)" << endl;
+    }
+}
+
+void GazeMarkerController::hideMarker(){
+    if (m_gazeMarker){
+        // Enable manual control mode
+        m_manualControl = true;
+
+        m_gazeMarker->getVisualObject()->setShowEnabled(false);
+        cerr << "Marker hidden" << endl;
+    }
+}
+
+void GazeMarkerController::toggleMarker(){
+    if (m_gazeMarker){
+        bool isVisible = m_gazeMarker->getVisualObject()->getShowEnabled();
+        
+        if (isVisible){
+            hideMarker();
+        } else {
+            showMarkerAtCameraCenter();
+        }
+    }
+}
+
+bool GazeMarkerController::isMarkerVisible(){
+    if (m_gazeMarker){
+        return m_gazeMarker->getVisualObject()->getShowEnabled();
+    }
+    return false;
 }

@@ -44,10 +44,18 @@
 
 #include "joystick.h"
 
-enum class FootPedalButtonMap{
-    CAM_CLUTCH = 0,
-    CHANGE_BURR_SIZE = 1,
-    DEVICE_CLUTCH = 2
+// Original joystick button mappings
+enum class FootPedalJoystickMap{
+    CAM_CLUTCH = 0,      // Button 0 on joystick
+    CHANGE_BURR_SIZE = 1, // Button 1 on joystick  
+    DEVICE_CLUTCH = 2     // Button 2 on joystick
+};
+
+// Keyboard button mappings (for FootSwitch) - using high key codes to avoid conflicts
+enum class FootPedalKeyboardMap{
+    BURR_STATE = 3,        // Custom high key code (mapped from B key)
+    CHANGE_BURR_SIZE = 4,  // Custom high key code (mapped from C key)
+    CAM_CLUTCH = 5      // Custom high key code (for future use)
 };
 
 class FootPedal: public JoyStick{
@@ -60,7 +68,19 @@ public:
 
     bool isDeviceClutchPressed();
 
+     // Getters that work for both joystick and keyboard
+    bool getCamClutchState();
+    bool getChangeBurrSizeState(); 
+    bool getDeviceClutchState();
+
+private:
     bool m_burrChangeBtnPrevState = false;
+    bool m_drillBtnPrevState = false;
+    
+    // Current states for both joystick and keyboard mappings
+    bool m_camClutchState = false;
+    bool m_changeBurrSizeState = false;
+    bool m_deviceClutchState = false;
 };
 
 #endif
