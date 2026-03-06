@@ -11,17 +11,18 @@ VOLUME mastoidectomy_volume_low:
   name: mastoidectomy_volume_low
   location:
     position: {x: -6.040592783505154, y: 0.0, z: 0.0}  # placed 745mm away from camera given 1AU = 0.049664m
-    # orientation: {r: 1.57079, p: 1.4, y: 0}
-    orientation: {r: 1.57079, p: 1.4, y: 0}
+    # orientation: {r: -1.57079, p: 0.0, y: 0}
+    orientation: {r: 1.57079, p: 3.8, y: 0}
+    # orientation: {r: 1.57079, p: 1.8, y: 3.14}
+
   scale: 1.0
   dimensions: {x: 1.0, y: 1.0, z: 1.0}
   images:
-    path: ../resources/volumes/RT143_256/
+    path: ../resources/volumes/George_project/George_jhu013
     prefix: plane00
     format: png
     count: 512
   shaders:
     path: ./shaders/dvr/
-    # path: ./shaders/volume/
     vertex: shader.vs
     fragment: shader.fs
